@@ -3,8 +3,8 @@
 import random
 from .. import loader
 from asyncio import sleep
-class AMod(loader.Module):
-	strings = {"name": "LoveMagic"}	
+class MagicLoveMod(loader.Module):
+	strings = {"name": "MagicLove"}	
 	async def watcher(self, message):
 		if message.text != "❤️ magic":
 			return
