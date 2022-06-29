@@ -6,7 +6,7 @@ from asyncio import sleep
 class AMod(loader.Module):
 	strings = {"name": "LoveMagic"}	
 	async def watcher(self, message):
-		if message.text != "❤️magic.":
+		if message.text != "❤️ magic":
 			return
 		if message.sender_id == (await message.client.get_me()).id:
 			arr = ["❤️", "🧡", "💛", "💚", "💙", "💜", "🤎", "🖤", "💖"]
