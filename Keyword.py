@@ -1,49 +1,70 @@
-"""
-    █ █ ▀ █▄▀ ▄▀█ █▀█ ▀    ▄▀█ ▀█▀ ▄▀█ █▀▄▀█ ▄▀█
-    █▀█ █ █ █ █▀█ █▀▄ █ ▄  █▀█  █  █▀█ █ ▀ █ █▀█
-
-    © Copyright 2022 t.me/hikariatama
-    Licensed under CC BY-NC-ND 4.0
-
-    🌐 https://creativecommons.org/licenses/by-nc-nd/4.0
-"""
+# █ █ ▀ █▄▀ ▄▀█ █▀█ ▀    ▄▀█ ▀█▀ ▄▀█ █▀▄▀█ ▄▀█
+# █▀█ █ █ █ █▀█ █▀▄ █ ▄  █▀█  █  █▀█ █ ▀ █ █▀█
+#
+#              © Copyright 2022
+#
+#          https://t.me/hikariatama
+#
+# 🔒 Licensed under the GNU GPLv3
+# 🌐 https://www.gnu.org/licenses/agpl-3.0.html
 
 # meta pic: https://img.icons8.com/fluency/48/000000/macbook-chat.png
-# meta developer: @hikariatama
+# meta developer: @hikarimods
+# scope: hikka_only
 
-from .. import loader, utils, main
 import logging
 import re
+import contextlib
+
 from telethon.tl.types import Message
+
+from .. import loader, utils
 
 logger = logging.getLogger(__name__)
 
 
 @loader.tds
 class KeywordMod(loader.Module):
-    """Create custom filters with regexes and commands"""
+    """Allows you to create custom filters with regexes, commands and unlimited funcionality"""
 
     strings = {
         "name": "Keyword",
-        "args": "🦊 <b>Args are incorrect</b>",
-        "kw_404": '🦊 <b>Keyword "{}" not found in db</b>',
-        "kw_added": "🦊 <b>New keyword:\nTrigger: {}\nMessage: {}\n{}{}{}{}{}</b>",
-        "kw_removed": '🦊 <b>Keyword "{}" removed</b>',
+        "args": "🚫 <b>Args are incorrect</b>",
+        "kw_404": '🚫 <b>Keyword "{}" not found</b>',
+        "kw_added": "✅ <b>New keyword:\nTrigger: {}\nMessage: {}\n{}{}{}{}{}</b>",
+        "kw_removed": '✅ <b>Keyword "{}" removed</b>',
         "kwbl_list": "🦊 <b>Blacklisted chats:</b>\n{}",
-        "bl_added": "🦊 <b>This chat is now blacklisted for Keywords</b>",
-        "bl_removed": "🦊 <b>This chat is now whitelisted for Keywords</b>",
+        "bl_added": "✅ <b>This chat is now blacklisted for Keywords</b>",
+        "bl_removed": "✅ <b>This chat is now whitelisted for Keywords</b>",
         "sent": "🦊 <b>[Keywords]: Sent message to {}, triggered by {}:\n{}</b>",
         "kwords": "🦊 <b>Current keywords:\n</b>{}",
-        "no_command": "🦊 <b>Execution of command forbidden, because message contains reply</b>",
+        "no_command": "🚫 <b>Execution of command forbidden, because message contains reply</b>",
+    }
+
+    strings_ru = {
+        "args": "🚫 <b>Неверные аргументы</b>",
+        "kw_404": '🚫 <b>Кейворд "{}" не найден</b>',
+        "kw_added": "✅ <b>Новый кейворд:\nТриггер: {}\nСообщение: {}\n{}{}{}{}{}</b>",
+        "kw_removed": '✅ <b>Кейворд "{}" удален</b>',
+        "kwbl_list": "🦊 <b>Чаты в черном списке:</b>\n{}",
+        "bl_added": "✅ <b>Этот чат теперь в черном списке Кейвордов</b>",
+        "bl_removed": "✅ <b>Этот чат больше не в черном списке Кейвордов</b>",
+        "sent": "🦊 <b>[Кейворды]: Отправлено сообщение в {}, активировано {}:\n{}</b>",
+        "kwords": "🦊 <b>Текущие кейворды:\n</b>{}",
+        "no_command": "🚫 <b>Команда не была выполнена, так как сообщение содержит реплай</b>",
+        "_cmd_doc_kword": "<кейворд | можно в кавычках | & для нескольких слов, которые должны быть в сообщении в любом порядке> <сообщение | оставь пустым для удаления кейворда> [-r для полного совпадения] [-m для автопрочтения сообщения] [-l для включения логирования] [-e для включения регулярных выражений]",
+        "_cmd_doc_kwords": "Показать активные кейворды",
+        "_cmd_doc_kwbl": "Добавить чат в черный список кейвордов",
+        "_cmd_doc_kwbllist": "Показать чаты в черном списке",
+        "_cls_doc": "Создавай кастомные кейворды с регулярными выражениями и командами",
     }
 
     async def client_ready(self, client, db):
-        self._db = db
         self._client = client
-        self.keywords = db.get("Keyword", "keywords", {})
-        self.bl = db.get("Keyword", "bl", [])
+        self.keywords = self.get("keywords", {})
+        self.bl = self.get("bl", [])
 
-    async def kwordcmd(self, message: Message) -> None:
+    async def kwordcmd(self, message: Message):
         """<keyword | could be in quotes | & for multiple words that should be in msg> <message | empty to remove keyword> [-r for full match] [-m for autoreading msg] [-l to log in pm] [-e for regular expressions]"""
         args = utils.get_args_raw(message)
         kw, ph, restrict, ar, l, e, c = "", "", False, False, False, False, False
@@ -83,8 +104,8 @@ class KeywordMod(loader.Module):
         if ph := args:
             ph = ph.strip()
             kw = kw.strip()
-            self.keywords[kw] = [f" {ph}", restrict, ar, l, e, c]
-            self._db.set("Keyword", "keywords", self.keywords)
+            self.keywords[kw] = [f"{ph}", restrict, ar, l, e, c]
+            self.set("keywords", self.keywords)
             return await utils.answer(
                 message,
                 self.strings("kw_added").format(
@@ -100,11 +121,13 @@ class KeywordMod(loader.Module):
         else:
             if kw not in self.keywords:
                 return await utils.answer(message, self.strings("kw_404").format(kw))
+
             del self.keywords[kw]
-            self._db.set("Keyword", "keywords", self.keywords)
+
+            self.set("keywords", self.keywords)
             return await utils.answer(message, self.strings("kw_removed").format(kw))
 
-    async def kwordscmd(self, message: Message) -> None:
+    async def kwordscmd(self, message: Message):
         """List current kwords"""
         res = ""
         for kw, ph in self.keywords.items():
@@ -129,19 +152,19 @@ class KeywordMod(loader.Module):
         await utils.answer(message, self.strings("kwords").format(res))
 
     @loader.group_admin_ban_users
-    async def kwblcmd(self, message: Message) -> None:
+    async def kwblcmd(self, message: Message):
         """Blacklist chat from answering keywords"""
         cid = utils.get_chat_id(message)
         if cid not in self.bl:
             self.bl.append(cid)
-            self._db.set("Keyword", "bl", self.bl)
+            self.set("bl", self.bl)
             return await utils.answer(message, self.strings("bl_added"))
         else:
             self.bl.remove(cid)
-            self._db.set("Keyword", "bl", self.bl)
+            self.set("bl", self.bl)
             return await utils.answer(message, self.strings("bl_removed"))
 
-    async def kwbllistcmd(self, message: Message) -> None:
+    async def kwbllistcmd(self, message: Message):
         """List blacklisted chats"""
         chat = str(utils.get_chat_id(message))
         res = ""
@@ -162,11 +185,8 @@ class KeywordMod(loader.Module):
 
         return await utils.answer(message, self.strings("kwbl_list").format(res))
 
-    async def watcher(self, message: Message) -> None:
-        try:
-            # logger.debug(message)
-            # if message.out: return
-
+    async def watcher(self, message: Message):
+        with contextlib.suppress(Exception):
             cid = utils.get_chat_id(message)
             if cid in self.bl:
                 return
@@ -200,14 +220,7 @@ class KeywordMod(loader.Module):
                 if (
                     len(ph) > 5
                     and ph[5]
-                    and ph[0][offset:].startswith(
-                        utils.escape_html(
-                            (
-                                self._db.get(main.__name__, "command_prefix", False)
-                                or "."
-                            )[0]
-                        )
-                    )
+                    and ph[0][offset:].startswith(self.get_prefix())
                 ):
                     offset += 1
 
@@ -236,11 +249,6 @@ class KeywordMod(loader.Module):
                 else:
                     ms = await message.respond(ph[0])
 
-                try:
-                    ms = ms[0]
-                except Exception:
-                    pass
-
                 ms.text = ph[0][2:]
 
                 if len(ph) > 5 and ph[5]:
@@ -253,6 +261,3 @@ class KeywordMod(loader.Module):
                             await self.allmodules.commands[cmd](ms)
                     else:
                         await ms.respond(self.strings("no_command"))
-
-        except Exception:
-            pass
